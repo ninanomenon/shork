@@ -48,3 +48,7 @@ Further documentation can be found at <https://hexdocs.pm/shork>.
 gleam run   # Run the project
 gleam test  # Run the tests
 ```
+
+## Acknowlement
+
+This project is kindly supported by [binary butterfly](https://github.com/binary-butterfly).
