@@ -139,6 +139,7 @@ pub fn returning(query: Query(t1), decoder: decode.Decoder(t2)) -> Query(t2) {
 
 pub type QueryError {
   UnexpectedResultType(List(decode.DecodeError))
+  ServerError(Int, String)
 }
 
 pub fn query(sql: String) -> Query(Nil) {
@@ -176,5 +177,6 @@ pub fn execute(
     |> list.try_map(decode.run(_, query.row_decoder))
     |> result.map_error(UnexpectedResultType),
   )
+
   Ok(Returend(column_names, rows))
 }

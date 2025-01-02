@@ -50,8 +50,25 @@ disconnect(#shork_connection{pid = Pid}) ->
 query(#shork_connection{pid = Pid}, Sql, Arguments) ->
   Res = mysql:query(Pid, Sql, Arguments),
   case Res of
+    ok ->
+      build_return(Pid);
+    {ok, ok} ->
+      build_return(Pid);
     {ok, ColumnNames, Rows} ->
       {ok, {ColumnNames, lists:map(fun(X) -> list_to_tuple(X) end, Rows)}};
+    {error, {Code, _, Message}} ->
+      {error, {server_error, Code, Message}};
     {error, Error} ->
-      {error, Error}
+      {error, {unknown_error, Error}}
   end.
+
+build_return(Pid) ->
+  LastInsertId = mysql:insert_id(Pid),
+
+  AffectedRows = mysql:affected_rows(Pid),
+
+  WarningCount = mysql:warning_count(Pid),
+
+  {ok,
+   {[last_insert_id, affected_rows, warning_count],
+    [{LastInsertId, AffectedRows, WarningCount}]}}.
