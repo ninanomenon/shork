@@ -1,6 +1,6 @@
 -module(shork_ffi).
 
--export([connect/1, disconnect/1, query/3, intimidate/1]).
+-export([connect/1, disconnect/1, query/3, intimidate/1, transaction/2]).
 
 -record(shork_connection, {pid}).
 -record(config,
@@ -47,6 +47,21 @@ connect(#config{host = Host,
 disconnect(#shork_connection{pid = Pid}) ->
   mysql:stop(Pid).
 
+transaction(#shork_connection{pid = Pid} = Conn, Callback) ->
+  Fun =
+    fun() ->
+       case Callback(Conn) of
+         {ok, T} -> {ok, T};
+         {error, Reason} -> throw({shork_rollback_transaction, Reason})
+       end
+    end,
+  case mysql:transaction(Pid, Fun) of
+    {atomic, {ok, T}} ->
+      {ok, T};
+    {aborted, {throw, {shork_rollback_transaction, Reason}}} ->
+      {error, {transaction_rolled_back, Reason}}
+  end.
+
 query(#shork_connection{pid = Pid}, Sql, Arguments) ->
   Res = mysql:query(Pid, Sql, Arguments),
   case Res of
@@ -64,9 +79,7 @@ query(#shork_connection{pid = Pid}, Sql, Arguments) ->
 
 build_return(Pid) ->
   LastInsertId = mysql:insert_id(Pid),
-
   AffectedRows = mysql:affected_rows(Pid),
-
   WarningCount = mysql:warning_count(Pid),
 
   {ok,
