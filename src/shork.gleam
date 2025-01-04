@@ -147,7 +147,7 @@ pub fn connect(a: Config) -> Connection
 @external(erlang, "shork_ffi", "disconnect")
 pub fn disconnect(a: Connection) -> Nil
 
-/// A value that can be sent to PostgreSQL as one of the arguments to a
+/// A value that can be sent to MySQL as one of the arguments to a
 /// parameterised SQL query.
 pub type Value
 
