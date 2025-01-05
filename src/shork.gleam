@@ -4,8 +4,9 @@ import gleam/erlang/charlist.{type Charlist, from_string}
 import gleam/list
 import gleam/result
 
+// TODO: SSL
+// TODO: Query Timeout
 // TODO: Connection pooling 
-// TODO: Transactions
 // TODO: Better Error Handling
 // TODO: Documentation
 // TODO: Datetime Decoder
@@ -42,6 +43,8 @@ pub opaque type Config {
   )
 }
 
+/// The default configuration for a connection. 
+///
 pub fn default_config() {
   Config(
     host: from_string("localhost"),
@@ -58,58 +61,95 @@ pub fn default_config() {
   )
 }
 
+/// Database server hostname.
+/// 
+/// (default: localhost)
 pub fn host(config: Config, host: String) -> Config {
   Config(..config, host: from_string(host))
 }
 
+/// Port the server is listing on.
+/// 
+/// (default: 3306)
 pub fn port(config: Config, port: Int) -> Config {
   Config(..config, port:)
 }
 
+/// Username to connect to database as.
 pub fn user(config: Config, user: String) -> Config {
   Config(..config, user: from_string(user))
 }
 
+/// Name of the database to use.
 pub fn database(config: Config, database: String) -> Config {
   Config(..config, database: from_string(database))
 }
 
+/// Password for the user.
 pub fn password(config: Config, password: String) -> Config {
   Config(..config, password: from_string(password))
 }
 
+/// The maximum time to spend on connect.
+/// 
+/// (default: 3000)
 pub fn connection_timeout(config: Config, query_timeout: Int) -> Config {
   Config(..config, query_timeout:)
 }
 
+/// Whether to fetch warnings and log them using error_logger.
+/// 
+/// (default: False)
 pub fn log_warnings(config: Config, log_warnings: Bool) -> Config {
   Config(..config, log_warnings:)
 }
 
+/// Whether to log queries that got as slow query from the server.
+/// 
+/// (default: False)
 pub fn log_slow_queries(config: Config, log_slow_queries: Bool) -> Config {
   Config(..config, log_slow_queries:)
 }
 
+/// Whether to send keep alive messages for used connections.
+/// 
+/// (default: False)
 pub fn keep_alive(config: Config, keep_alive: Bool) -> Config {
   Config(..config, keep_alive:)
 }
 
+/// Default time to wait for a query to execute.
+/// 
+/// (default: 5000)
 pub fn query_timeout(config: Config, query_timeout: Int) -> Config {
   Config(..config, query_timeout:)
 }
 
+/// The minimum number of milliseconds to cache prepared statements used
+/// for parametrized queries with query.
+/// 
+/// (default: 1000)
 pub fn query_cache_time(config: Config, query_cache_time: Int) -> Config {
   Config(..config, query_cache_time:)
 }
 
+/// A connection to a database against which queries can be made.
+/// 
+/// Created using the `connect` function and shutdown using the `disconnect`
+// function
+
 pub type Connection
 
+/// Starts a database connection.
 @external(erlang, "shork_ffi", "connect")
 pub fn connect(a: Config) -> Connection
 
+/// Stops a database connection.
 @external(erlang, "shork_ffi", "disconnect")
 pub fn disconnect(a: Connection) -> Nil
 
+/// A value that can be sent to MySQL as one of the arguments to a
+/// parameterised SQL query.
 pub type Value
 
 @external(erlang, "shork_ffi", "intimidate")
@@ -132,18 +172,36 @@ pub opaque type Query(row_type) {
   )
 }
 
+/// Create a new query to use with the `execute`, `returning` and `parameters`
+/// function.
+///
 pub fn returning(query: Query(t1), decoder: decode.Decoder(t2)) -> Query(t2) {
   let Query(sql:, parameters:, row_decoder: _) = query
   Query(sql:, parameters:, row_decoder: decoder)
 }
 
 pub type QueryError {
+  /// The rows returned by the database could not be decoded using
+  /// the supplied dynamic decoder.
   UnexpectedResultType(List(decode.DecodeError))
+  /// The server returned a error during processing the query.
   ServerError(Int, String)
 }
 
+/// Set the decoder to use for the type of row returned by executing this query.
+/// 
+/// If the decoder is unable to decode the row value then query will return an 
+/// error. 
 pub fn query(sql: String) -> Query(Nil) {
   Query(sql:, parameters: [], row_decoder: decode.success(Nil))
+}
+
+pub type TransactionError {
+  /// One query inside a query returned a error.
+  TransactionQueryError(QueryError)
+  /// The transaction rolled back as an result of an 
+  /// error inside the transaction.
+  TransactionRolledBack(String)
 }
 
 @external(erlang, "shork_ffi", "query")
@@ -153,14 +211,24 @@ pub fn run_query(
   c: List(Value),
 ) -> Result(#(List(String), List(dynamic.Dynamic)), QueryError)
 
+@external(erlang, "shork_ffi", "transaction")
+pub fn transaction(
+  connection: Connection,
+  callback cb: fn(Connection) -> Result(t, e),
+) -> Result(t, TransactionError)
+
+/// The names of the column names and the  rows returend 
+/// by the query.
 pub type Returend(t) {
   Returend(column_names: List(String), rows: List(t))
 }
 
+/// Push a new parameter value for the query.
 pub fn parameter(query: Query(t1), parameter: Value) -> Query(t1) {
   Query(..query, parameters: [parameter, ..query.parameters])
 }
 
+/// Run a query against a MySQL/MariaDB database.
 pub fn execute(
   query: Query(t),
   connection: Connection,
