@@ -16,7 +16,7 @@ pub fn main() {
 fn start_default() -> shork.Connection {
   shork.default_config()
   |> shork.user("root")
-  |> shork.password("strong_password")
+  |> shork.password("root")
   |> shork.database("shork_test")
   |> shork.connect
 }
