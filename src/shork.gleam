@@ -200,7 +200,7 @@ pub fn run_query(
 @external(erlang, "shork_ffi", "transaction")
 pub fn transaction(
   connection: Connection,
-  cb: fn(Connection) -> Result(t, String),
+  callback cb: fn(Connection) -> Result(t, e),
 ) -> Result(t, TransactionError)
 
 pub type Returend(t) {
