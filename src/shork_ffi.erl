@@ -83,5 +83,5 @@ build_return(Pid) ->
   WarningCount = mysql:warning_count(Pid),
 
   {ok,
-   {[last_insert_id, affected_rows, warning_count],
+   {[<<"last_insert_id"/utf8>>, <<"affected_rows"/utf8>>, <<"warning_count"/utf8>>],
     [{LastInsertId, AffectedRows, WarningCount}]}}.

@@ -4,8 +4,9 @@ import gleam/erlang/charlist.{type Charlist, from_string}
 import gleam/list
 import gleam/result
 
+// TODO: SSL
+// TODO: Query Timeout
 // TODO: Connection pooling 
-// TODO: Transactions
 // TODO: Better Error Handling
 // TODO: Documentation
 // TODO: Datetime Decoder
@@ -171,22 +172,35 @@ pub opaque type Query(row_type) {
   )
 }
 
+/// Create a new query to use with the `execute`, `returning` and `parameters`
+/// function.
+///
 pub fn returning(query: Query(t1), decoder: decode.Decoder(t2)) -> Query(t2) {
   let Query(sql:, parameters:, row_decoder: _) = query
   Query(sql:, parameters:, row_decoder: decoder)
 }
 
 pub type QueryError {
+  /// The rows returned by the database could not be decoded using
+  /// the supplied dynamic decoder.
   UnexpectedResultType(List(decode.DecodeError))
+  /// The server returned a error during processing the query.
   ServerError(Int, String)
 }
 
+/// Set the decoder to use for the type of row returned by executing this query.
+/// 
+/// If the decoder is unable to decode the row value then query will return an 
+/// error. 
 pub fn query(sql: String) -> Query(Nil) {
   Query(sql:, parameters: [], row_decoder: decode.success(Nil))
 }
 
 pub type TransactionError {
+  /// One query inside a query returned a error.
   TransactionQueryError(QueryError)
+  /// The transaction rolled back as an result of an 
+  /// error inside the transaction.
   TransactionRolledBack(String)
 }
 
@@ -203,14 +217,18 @@ pub fn transaction(
   callback cb: fn(Connection) -> Result(t, e),
 ) -> Result(t, TransactionError)
 
+/// The names of the column names and the  rows returend 
+/// by the query.
 pub type Returend(t) {
   Returend(column_names: List(String), rows: List(t))
 }
 
+/// Push a new parameter value for the query.
 pub fn parameter(query: Query(t1), parameter: Value) -> Query(t1) {
   Query(..query, parameters: [parameter, ..query.parameters])
 }
 
+/// Run a query against a MySQL/MariaDB database.
 pub fn execute(
   query: Query(t),
   connection: Connection,
