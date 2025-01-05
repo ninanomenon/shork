@@ -1,5 +1,4 @@
 import gleam/dynamic/decode
-import gleam/io
 import gleam/list
 import gleeunit
 import gleeunit/should
@@ -112,6 +111,12 @@ fn insert_defult_data(connection: shork.Connection) {
     insert_friend_group_member_sql
       |> shork.parameter(shork.int(1))
       |> shork.parameter(shork.int(2)),
+    insert_friend_group_member_sql
+      |> shork.parameter(shork.int(2))
+      |> shork.parameter(shork.int(3)),
+    insert_friend_group_member_sql
+      |> shork.parameter(shork.int(2))
+      |> shork.parameter(shork.int(4)),
   ]
   |> list.each(fn(query) {
     let assert Ok(_) = shork.execute(query, connection)
@@ -257,4 +262,114 @@ pub fn select_from_unknown_table_test() {
   should.equal(code, 1146)
 
   message |> should.equal("Table 'shork_test.unknown' doesn't exist")
+}
+
+pub fn insert_with_incorrect_types_test() {
+  let connection = start_default()
+  let sql =
+    "
+    insert into shorks (name, size) into (true, true)
+    "
+
+  let assert Error(shork.ServerError(code, message)) =
+    shork.query(sql) |> shork.execute(connection)
+
+  should.equal(code, 1064)
+
+  message
+  |> should.equal(
+    "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'into (true, true)' at line 1",
+  )
+}
+
+pub fn transaction_commit_test() {
+  let connection = start_default()
+
+  let insert = fn(connection, name, size) -> Int {
+    let sql =
+      "
+      insert into shorks (name, size)
+      values (?, ?)
+      "
+
+    let assert Ok(id) =
+      shork.query(sql)
+      |> shork.parameter(shork.text(name))
+      |> shork.parameter(shork.float(size))
+      |> shork.returning({
+        use id <- decode.field(0, decode.int)
+        decode.success(id)
+      })
+      |> shork.execute(connection)
+
+    let assert Ok(id) = list.first(id.rows)
+    id
+  }
+
+  let insert_friend_to_group = fn(connection, friend_group_id, shork_id) {
+    let sql =
+      "insert into friend_group_member (group_fk, shork_fk) values (?, ?)"
+    let assert Ok(id) =
+      shork.query(sql)
+      |> shork.parameter(shork.int(friend_group_id))
+      |> shork.parameter(shork.int(shork_id))
+      |> shork.returning({
+        use id <- decode.field(0, decode.int)
+        decode.success(id)
+      })
+      |> shork.execute(connection)
+
+    let assert Ok(id) = list.first(id.rows)
+    id
+  }
+
+  let assert Ok(#(id1, id2)) =
+    shork.transaction(connection, fn(connection) {
+      let id1 = insert(connection, "Trans Shork 1", 100.4)
+      let id2 = insert(connection, "Trans Shork 2", 100.5)
+
+      let _ = insert_friend_to_group(connection, 1, id1)
+      let _ = insert_friend_to_group(connection, 1, id2)
+
+      Ok(#(id1, id2))
+    })
+
+  should.equal(id1, 6)
+  should.equal(id2, 7)
+
+  let assert Error(shork.TransactionRolledBack(message)) =
+    shork.transaction(connection, fn(connection) {
+      let _ = insert_friend_to_group(connection, 2, id1)
+      let _ = insert_friend_to_group(connection, 2, id2)
+
+      Error("Social Anxiety")
+    })
+
+  should.equal(message, "Social Anxiety")
+
+  let sql =
+    "
+    select g.id, s1.name as s1_name, s2.name as s2_name from friend_group_member m1
+    inner join friend_groups g on g.id = m1.group_fk
+    inner join friend_group_member m2 on g.id = m2.group_fk 
+    inner join shorks s1 on s1.id = m1.shork_fk 
+    inner join shorks s2 on s2.id = m2.shork_fk 
+    where s1.name = 'Trans Shork 1' or s2.name = 'Trans Shork 2'
+    "
+
+  let assert Ok(returned) =
+    shork.query(sql)
+    |> shork.returning({
+      use group_id <- decode.field(0, decode.int)
+      use s1_name <- decode.field(1, decode.string)
+      use s2_name <- decode.field(2, decode.string)
+
+      decode.success(#(group_id, s1_name, s2_name))
+    })
+    |> shork.execute(connection)
+
+  returned.column_names
+  |> should.equal(["id", "s1_name", "s2_name"])
+
+  list.each(returned.rows, fn(row) { should.equal(row.0, 1) })
 }
