@@ -62,9 +62,9 @@ transaction(#shork_connection{pid = Pid} = Conn, Callback) ->
       {error, {transaction_rolled_back, Reason}}
   end.
 
-query(#shork_connection{pid = Pid, default_timeout = DefaultTimeout}, Sql, Arguments, Timeout) ->
+query(#shork_connection{pid = Pid, default_timeout = DefaultTimeout}, Sql, Arguments, OptionalTimeout) ->
   Timeout1 =
-    case Timeout of
+    case OptionalTimeout of
       none ->
         DefaultTimeout;
       {some, QueryTimeout} ->
