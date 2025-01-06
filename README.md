@@ -57,7 +57,7 @@ This project is kindly supported by [binary butterfly](https://github.com/binary
 
 GNU Lesser General Public License (LGPL) version 3 or any later version.
 Since the LGPL is a set of additional permissions on top of the GPL, both
-license texts are included in the files COPYING and COPYING.LESSER respectively.
+license texts are included in the files LICENSE and LICENSE.LESSER respectively.
 
 In short, LGPL allows you to use the library in non-free software and software
 with incompatible licenses.
