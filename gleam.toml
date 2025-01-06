@@ -2,7 +2,7 @@ name = "shork"
 version = "0.1.0"
 
 description = "A MySQL / MariaDB database client for Gleam, based on MySQL-OTP. Heavily inspired by POG."
-licences = ["GPL-3.0"]
+licences = ["LGPL-3.0"]
 repository = { type = "github", user = "ninanomenon", repo = "shork" }
 
 [dependencies]
