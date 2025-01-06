@@ -2,6 +2,7 @@ import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/erlang/charlist.{type Charlist, from_string}
 import gleam/list
+import gleam/option
 import gleam/result
 
 // TODO: SSL
@@ -169,6 +170,7 @@ pub opaque type Query(row_type) {
     sql: String,
     parameters: List(Value),
     row_decoder: decode.Decoder(row_type),
+    timeout: option.Option(Int),
   )
 }
 
@@ -176,8 +178,8 @@ pub opaque type Query(row_type) {
 /// function.
 ///
 pub fn returning(query: Query(t1), decoder: decode.Decoder(t2)) -> Query(t2) {
-  let Query(sql:, parameters:, row_decoder: _) = query
-  Query(sql:, parameters:, row_decoder: decoder)
+  let Query(sql:, parameters:, row_decoder: _, timeout:) = query
+  Query(sql:, parameters:, row_decoder: decoder, timeout:)
 }
 
 pub type QueryError {
@@ -193,7 +195,23 @@ pub type QueryError {
 /// If the decoder is unable to decode the row value then query will return an 
 /// error. 
 pub fn query(sql: String) -> Query(Nil) {
-  Query(sql:, parameters: [], row_decoder: decode.success(Nil))
+  Query(
+    sql:,
+    parameters: [],
+    row_decoder: decode.success(Nil),
+    timeout: option.None,
+  )
+}
+
+/// Push a new parameter value for the query.
+pub fn parameter(query: Query(t), parameter: Value) -> Query(t) {
+  Query(..query, parameters: [parameter, ..query.parameters])
+}
+
+/// Use a custom timeout for the query.
+/// The timeout give is given in ms.
+pub fn timeout(query: Query(t), timeout: Int) -> Query(t) {
+  Query(..query, timeout: option.Some(timeout))
 }
 
 pub type TransactionError {
@@ -209,6 +227,7 @@ pub fn run_query(
   a: Connection,
   b: String,
   c: List(Value),
+  d: option.Option(Int),
 ) -> Result(#(List(String), List(dynamic.Dynamic)), QueryError)
 
 @external(erlang, "shork_ffi", "transaction")
@@ -223,11 +242,6 @@ pub type Returend(t) {
   Returend(column_names: List(String), rows: List(t))
 }
 
-/// Push a new parameter value for the query.
-pub fn parameter(query: Query(t1), parameter: Value) -> Query(t1) {
-  Query(..query, parameters: [parameter, ..query.parameters])
-}
-
 /// Run a query against a MySQL/MariaDB database.
 pub fn execute(
   query: Query(t),
@@ -239,6 +253,7 @@ pub fn execute(
     connection,
     query.sql,
     parameters,
+    query.timeout,
   ))
   use rows <- result.then(
     rows

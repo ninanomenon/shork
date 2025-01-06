@@ -373,3 +373,53 @@ pub fn transaction_commit_test() {
 
   list.each(returned.rows, fn(row) { should.equal(row.0, 1) })
 }
+
+pub fn query_with_custome_timeout_test() {
+  let connection = start_default()
+
+  let sql = "select * from shorks"
+
+  let assert Ok(returned) =
+    shork.query(sql)
+    |> shork.timeout(1000)
+    |> shork.returning({
+      use id <- decode.field(0, decode.int)
+      use name <- decode.field(1, decode.string)
+      use size <- decode.field(2, decode.float)
+
+      decode.success(#(id, name, size))
+    })
+    |> shork.execute(connection)
+
+  should.equal(returned.column_names, ["id", "name", "size"])
+  list.length(returned.rows) |> should.equal(7)
+
+  returned.rows
+  |> should.equal([
+    #(1, "Hainelore", 90.0),
+    #(2, "Tony Shark", 70.5),
+    #(3, "Kleinelore", 45.3),
+    #(4, "Kleinrich", 20.0),
+    #(5, "Clark the shark", 75.9),
+    #(6, "Trans Shork 1", 100.4),
+    #(7, "Trans Shork 2", 100.5),
+  ])
+}
+
+pub fn query_with_too_short_custome_timeout_test() {
+  let connection = start_default()
+
+  let sql = "select sleep(4000)"
+
+  let assert Ok(result) =
+    shork.query(sql)
+    |> shork.timeout(200)
+    |> shork.returning({
+      use x0 <- decode.field(0, decode.int)
+      decode.success(x0)
+    })
+    |> shork.execute(connection)
+
+  let assert Ok(value) = list.first(result.rows)
+  should.equal(value, 1)
+}

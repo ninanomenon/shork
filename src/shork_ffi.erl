@@ -1,8 +1,8 @@
 -module(shork_ffi).
 
--export([connect/1, disconnect/1, query/3, intimidate/1, transaction/2]).
+-export([connect/1, disconnect/1, query/4, intimidate/1, transaction/2]).
 
--record(shork_connection, {pid}).
+-record(shork_connection, {pid, default_timeout}).
 -record(config,
         {host,
          port,
@@ -42,7 +42,7 @@ connect(#config{host = Host,
                       {keep_alive, KeepAlive},
                       {query_timeout, QueryTimeout},
                       {query_cache_time, QueryCacheTime}]),
-  #shork_connection{pid = Pid}.
+  #shork_connection{pid = Pid, default_timeout = QueryTimeout}.
 
 disconnect(#shork_connection{pid = Pid}) ->
   mysql:stop(Pid).
@@ -62,9 +62,15 @@ transaction(#shork_connection{pid = Pid} = Conn, Callback) ->
       {error, {transaction_rolled_back, Reason}}
   end.
 
-query(#shork_connection{pid = Pid}, Sql, Arguments) ->
-  Res = mysql:query(Pid, Sql, Arguments),
-  case Res of
+query(#shork_connection{pid = Pid, default_timeout = DefaultTimeout}, Sql, Arguments, Timeout) ->
+  Timeout1 =
+    case Timeout of
+      none ->
+        DefaultTimeout;
+      {some, QueryTimeout} ->
+        QueryTimeout
+    end,
+  case mysql:query(Pid, Sql, Arguments, Timeout1) of
     ok ->
       build_return(Pid);
     {ok, ok} ->
