@@ -374,7 +374,7 @@ pub fn transaction_commit_test() {
   list.each(returned.rows, fn(row) { should.equal(row.0, 1) })
 }
 
-pub fn query_with_custome_timeout_test() {
+pub fn query_with_custom_timeout_test() {
   let connection = start_default()
 
   let sql = "select * from shorks"
