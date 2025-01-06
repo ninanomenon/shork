@@ -406,7 +406,7 @@ pub fn query_with_custom_timeout_test() {
   ])
 }
 
-pub fn query_with_too_short_custome_timeout_test() {
+pub fn query_with_too_short_custom_timeout_test() {
   let connection = start_default()
 
   let sql = "select sleep(4000)"
