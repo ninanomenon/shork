@@ -220,7 +220,7 @@ pub type TransactionError {
 }
 
 @external(erlang, "shork_ffi", "query")
-pub fn run_query(
+fn run_query(
   a: Connection,
   b: String,
   c: List(Value),
