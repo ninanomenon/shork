@@ -6,12 +6,9 @@ import gleam/option
 import gleam/result
 
 // TODO: SSL
-// TODO: Query Timeout
 // TODO: Connection pooling 
 // TODO: Better Error Handling
-// TODO: Documentation
 // TODO: Datetime Decoder
-// TODO: Tests
 
 /// The configuration of a connection.
 pub opaque type Config {
