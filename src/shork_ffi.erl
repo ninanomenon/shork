@@ -63,14 +63,14 @@ transaction(#shork_connection{pid = Pid} = Conn, Callback) ->
   end.
 
 query(#shork_connection{pid = Pid, default_timeout = DefaultTimeout}, Sql, Arguments, OptionalTimeout) ->
-  Timeout1 =
+  Timeout =
     case OptionalTimeout of
       none ->
         DefaultTimeout;
       {some, QueryTimeout} ->
         QueryTimeout
     end,
-  case mysql:query(Pid, Sql, Arguments, Timeout1) of
+  case mysql:query(Pid, Sql, Arguments, Timeout) of
     ok ->
       build_return(Pid);
     {ok, ok} ->
