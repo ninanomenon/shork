@@ -1,6 +1,6 @@
 -module(shork_ffi).
 
--export([connect/1, disconnect/1, query/4, null/0, coerce/1, transaction/2, null/0]).
+-export([connect/1, disconnect/1, query/4, null/0, coerce/1, transaction/2]).
 
 -record(shork_connection, {pid, default_timeout}).
 -record(config,
