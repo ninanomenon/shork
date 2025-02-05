@@ -241,8 +241,8 @@ pub type Returned(t) {
 
 /// Run a query against a MySQL/MariaDB database.
 pub fn execute(
-  query: Query(t),
-  connection: Connection,
+  query query: Query(t),
+  on connection: Connection,
 ) -> Result(Returned(t), QueryError) {
   let parameters = list.reverse(query.parameters)
 
