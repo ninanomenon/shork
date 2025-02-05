@@ -8,7 +8,7 @@ pub fn main() {
   let connection = start_default()
   create_table(connection)
   truncate(connection)
-  insert_defult_data(connection)
+  insert_default_data(connection)
 
   gleeunit.main()
 }
@@ -30,7 +30,7 @@ fn create_table(connection: shork.Connection) {
       size    float        not null,
 
       primary key (id)
-    ) 
+    )
     "
   let friend_groups_sql =
     "
@@ -46,7 +46,7 @@ fn create_table(connection: shork.Connection) {
     create table if not exists friend_group_member (
       group_fk int not null,
       shork_fk int not null,
-      
+
       primary key (group_fk, shork_fk),
 
       foreign key (group_fk) references friend_groups (id),
@@ -66,7 +66,7 @@ fn create_table(connection: shork.Connection) {
   })
 }
 
-fn insert_defult_data(connection: shork.Connection) {
+fn insert_default_data(connection: shork.Connection) {
   let insert_shork_sql =
     shork.query("insert into shorks (name, size) values (?, ?)")
   let insert_friend_group_sql =
@@ -351,9 +351,9 @@ pub fn transaction_commit_test() {
     "
     select g.id, s1.name as s1_name, s2.name as s2_name from friend_group_member m1
     inner join friend_groups g on g.id = m1.group_fk
-    inner join friend_group_member m2 on g.id = m2.group_fk 
-    inner join shorks s1 on s1.id = m1.shork_fk 
-    inner join shorks s2 on s2.id = m2.shork_fk 
+    inner join friend_group_member m2 on g.id = m2.group_fk
+    inner join shorks s1 on s1.id = m1.shork_fk
+    inner join shorks s2 on s2.id = m2.shork_fk
     where s1.name = 'Trans Shork 1' or s2.name = 'Trans Shork 2'
     "
 
