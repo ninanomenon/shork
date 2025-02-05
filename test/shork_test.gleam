@@ -439,7 +439,7 @@ pub fn null_test() {
   let assert Ok(_) =
     create_table_sql |> shork.query |> shork.execute(connection)
 
-  let sql = shork.query("insert into table_for_nulls (id, name) values (?, )")
+  let sql = shork.query("insert into table_for_nulls (id, name) values (?, ?)")
 
   let assert Ok(_) =
     sql
