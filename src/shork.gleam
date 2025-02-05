@@ -6,7 +6,7 @@ import gleam/option
 import gleam/result
 
 // TODO: SSL
-// TODO: Connection pooling 
+// TODO: Connection pooling
 // TODO: Better Error Handling
 // TODO: Datetime Decoder
 
@@ -41,7 +41,7 @@ pub opaque type Config {
   )
 }
 
-/// The default configuration for a connection. 
+/// The default configuration for a connection.
 ///
 pub fn default_config() {
   Config(
@@ -60,14 +60,14 @@ pub fn default_config() {
 }
 
 /// Database server hostname.
-/// 
+///
 /// (default: localhost)
 pub fn host(config: Config, host: String) -> Config {
   Config(..config, host: from_string(host))
 }
 
 /// Port the server is listing on.
-/// 
+///
 /// (default: 3306)
 pub fn port(config: Config, port: Int) -> Config {
   Config(..config, port:)
@@ -89,35 +89,35 @@ pub fn password(config: Config, password: String) -> Config {
 }
 
 /// The maximum time to spend on connect.
-/// 
+///
 /// (default: 3000)
 pub fn connection_timeout(config: Config, query_timeout: Int) -> Config {
   Config(..config, query_timeout:)
 }
 
 /// Whether to fetch warnings and log them using error_logger.
-/// 
+///
 /// (default: False)
 pub fn log_warnings(config: Config, log_warnings: Bool) -> Config {
   Config(..config, log_warnings:)
 }
 
 /// Whether to log queries that got as slow query from the server.
-/// 
+///
 /// (default: False)
 pub fn log_slow_queries(config: Config, log_slow_queries: Bool) -> Config {
   Config(..config, log_slow_queries:)
 }
 
 /// Whether to send keep alive messages for used connections.
-/// 
+///
 /// (default: False)
 pub fn keep_alive(config: Config, keep_alive: Bool) -> Config {
   Config(..config, keep_alive:)
 }
 
 /// Default time to wait for a query to execute.
-/// 
+///
 /// (default: 5000)
 pub fn query_timeout(config: Config, query_timeout: Int) -> Config {
   Config(..config, query_timeout:)
@@ -125,14 +125,14 @@ pub fn query_timeout(config: Config, query_timeout: Int) -> Config {
 
 /// The minimum number of milliseconds to cache prepared statements used
 /// for parametrized queries with query.
-/// 
+///
 /// (default: 1000)
 pub fn query_cache_time(config: Config, query_cache_time: Int) -> Config {
   Config(..config, query_cache_time:)
 }
 
 /// A connection to a database against which queries can be made.
-/// 
+///
 /// Created using the `connect` function and shutdown using the `disconnect`
 // function
 
@@ -188,9 +188,9 @@ pub type QueryError {
 }
 
 /// Set the decoder to use for the type of row returned by executing this query.
-/// 
-/// If the decoder is unable to decode the row value then query will return an 
-/// error. 
+///
+/// If the decoder is unable to decode the row value then query will return an
+/// error.
 pub fn query(sql: String) -> Query(Nil) {
   Query(
     sql:,
@@ -214,7 +214,7 @@ pub fn timeout(query: Query(t), timeout: Int) -> Query(t) {
 pub type TransactionError {
   /// One query inside a query returned a error.
   TransactionQueryError(QueryError)
-  /// The transaction rolled back as an result of an 
+  /// The transaction rolled back as an result of an
   /// error inside the transaction.
   TransactionRolledBack(String)
 }
@@ -233,17 +233,17 @@ pub fn transaction(
   callback cb: fn(Connection) -> Result(t, e),
 ) -> Result(t, TransactionError)
 
-/// The names of the column names and the  rows returend 
+/// The names of the column names and the  rows returned
 /// by the query.
-pub type Returend(t) {
-  Returend(column_names: List(String), rows: List(t))
+pub type Returned(t) {
+  Returned(column_names: List(String), rows: List(t))
 }
 
 /// Run a query against a MySQL/MariaDB database.
 pub fn execute(
-  query: Query(t),
-  connection: Connection,
-) -> Result(Returend(t), QueryError) {
+  query query: Query(t),
+  on connection: Connection,
+) -> Result(Returned(t), QueryError) {
   let parameters = list.reverse(query.parameters)
 
   use #(column_names, rows) <- result.try(run_query(
@@ -258,5 +258,5 @@ pub fn execute(
     |> result.map_error(UnexpectedResultType),
   )
 
-  Ok(Returend(column_names, rows))
+  Ok(Returned(column_names, rows))
 }
