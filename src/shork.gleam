@@ -150,16 +150,19 @@ pub fn disconnect(a: Connection) -> Nil
 /// parameterised SQL query.
 pub type Value
 
-@external(erlang, "shork_ffi", "intimidate")
+@external(erlang, "shork_ffi", "null")
+pub fn null() -> Value
+
+@external(erlang, "shork_ffi", "coerce")
 pub fn bool(a: Bool) -> Value
 
-@external(erlang, "shork_ffi", "intimidate")
+@external(erlang, "shork_ffi", "coerce")
 pub fn int(a: Int) -> Value
 
-@external(erlang, "shork_ffi", "intimidate")
+@external(erlang, "shork_ffi", "coerce")
 pub fn float(a: Float) -> Value
 
-@external(erlang, "shork_ffi", "intimidate")
+@external(erlang, "shork_ffi", "coerce")
 pub fn text(a: String) -> Value
 
 pub opaque type Query(row_type) {

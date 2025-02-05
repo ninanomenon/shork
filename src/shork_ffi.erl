@@ -1,6 +1,6 @@
 -module(shork_ffi).
 
--export([connect/1, disconnect/1, query/4, intimidate/1, transaction/2]).
+-export([connect/1, disconnect/1, query/4, coerce/1, transaction/2]).
 
 -record(shork_connection, {pid, default_timeout}).
 -record(config,
@@ -16,7 +16,10 @@
          query_timeout,
          query_cache_time}).
 
-intimidate(Value) ->
+null() ->
+    null.
+
+coerce(Value) ->
   Value.
 
 connect(#config{host = Host,
