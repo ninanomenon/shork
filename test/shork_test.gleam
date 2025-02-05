@@ -423,3 +423,27 @@ pub fn query_with_too_short_custom_timeout_test() {
   let assert Ok(value) = list.first(result.rows)
   should.equal(value, 1)
 }
+
+pub fn null_test() {
+  let connection = start_default()
+  let create_table_sql =
+    "
+    create table if not exists table_for_nulls (
+      id      int          not null auto_increment,
+      name    varchar(255) null
+
+      primary key (id)
+    )
+    "
+
+  let assert Ok(_) =
+    create_table_sql |> shork.query |> shork.execute(connection)
+
+  let sql = shork.query("insert into table_for_nulls (id, name) values (?, )")
+
+  let assert Ok(_) =
+    sql
+    |> shork.parameter(shork.int(1))
+    |> shork.parameter(shork.null())
+    |> shork.execute(connection)
+}
