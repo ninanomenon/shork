@@ -1,14 +1,14 @@
 name = "shork"
-version = "1.1.0"
+version = "1.1.1"
 
 description = "A MySQL / MariaDB database client for Gleam, based on MySQL-OTP. Heavily inspired by POG."
 licences = ["LGPL-3.0"]
 repository = { type = "github", user = "ninanomenon", repo = "shork" }
 
 [dependencies]
+gleam_erlang = ">= 0.34.0 and < 1.0.0"
 gleam_stdlib = ">= 0.54.0 and < 1.0.0"
 mysql = ">= 1.8.0 and < 2.0.0"
-gleam_erlang = ">= 0.34.0 and < 1.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
