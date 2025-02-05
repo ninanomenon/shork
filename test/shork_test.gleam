@@ -430,7 +430,7 @@ pub fn null_test() {
     "
     create table if not exists table_for_nulls (
       id      int          not null auto_increment,
-      name    varchar(255)
+      name    varchar(255),
 
       primary key (id)
     )
