@@ -136,15 +136,35 @@ pub fn query_cache_time(config: Config, query_cache_time: Int) -> Config {
 /// Created using the `connect` function and shutdown using the `disconnect`
 // function
 
-pub type Connection
+pub opaque type Connection {
+  Connection(raw: RawConnection, disconnect: fn(Connection) -> Nil)
+}
+
+/// internal raw connection type
+/// 
+/// The reason for this indirection is that the disconnect behaviour might
+/// be different for pooled connections 
+type RawConnection
+
+@external(erlang, "shork_ffi", "connect")
+fn raw_connect(a: Config) -> RawConnection
 
 /// Starts a database connection.
-@external(erlang, "shork_ffi", "connect")
-pub fn connect(a: Config) -> Connection
+pub fn connect(config: Config) -> Connection {
+  Connection(raw_connect(config), simple_disconnect)
+}
+
+fn simple_disconnect(c: Connection) -> Nil {
+  raw_disconnect(c.raw)
+}
+
+@external(erlang, "shork_ffi", "disconnect")
+fn raw_disconnect(a: RawConnection) -> Nil
 
 /// Stops a database connection.
-@external(erlang, "shork_ffi", "disconnect")
-pub fn disconnect(a: Connection) -> Nil
+pub fn disconnect(connection: Connection) -> Nil {
+  connection.disconnect(connection)
+}
 
 /// A value that can be sent to MySQL as one of the arguments to a
 /// parameterised SQL query.
@@ -224,17 +244,26 @@ pub type TransactionError {
 
 @external(erlang, "shork_ffi", "query")
 fn run_query(
-  a: Connection,
+  a: RawConnection,
   b: String,
   c: List(Value),
   d: option.Option(Int),
 ) -> Result(#(List(String), List(dynamic.Dynamic)), QueryError)
 
 @external(erlang, "shork_ffi", "transaction")
+fn raw_transaction(
+  connection: RawConnection,
+  callback cb: fn(RawConnection) -> Result(t, e),
+) -> Result(t, TransactionError)
+
 pub fn transaction(
   connection: Connection,
   callback cb: fn(Connection) -> Result(t, e),
-) -> Result(t, TransactionError)
+) -> Result(t, TransactionError) {
+  raw_transaction(connection.raw, fn(raw: RawConnection) {
+    cb(Connection(..connection, raw: raw))
+  })
+}
 
 /// The names of the column names and the  rows returned
 /// by the query.
@@ -250,7 +279,7 @@ pub fn execute(
   let parameters = list.reverse(query.parameters)
 
   use #(column_names, rows) <- result.try(run_query(
-    connection,
+    connection.raw,
     query.sql,
     parameters,
     query.timeout,
