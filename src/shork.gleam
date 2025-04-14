@@ -140,7 +140,7 @@ pub opaque type Connection {
   Connection(raw: RawConnection, disconnect: fn(Connection) -> Nil)
 }
 
-/// internal raw connection type
+/// Internal raw connection type
 /// 
 /// The reason for this indirection is that the disconnect behaviour might
 /// be different for pooled connections 
