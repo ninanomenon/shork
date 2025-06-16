@@ -1,7 +1,6 @@
 import gleam/dynamic/decode
 import gleam/list
 import gleeunit
-import gleeunit/should
 import shork
 
 pub fn main() {
@@ -156,10 +155,9 @@ pub fn insert_new_shork_test() {
     })
     |> shork.execute(connection)
 
-  should.equal(returned.column_names, [
-    "last_insert_id", "affected_rows", "warning_count",
-  ])
-  should.equal(returned.rows, [#(5, 1, 0)])
+  assert returned.column_names
+    == ["last_insert_id", "affected_rows", "warning_count"]
+  assert returned.rows == [#(5, 1, 0)]
 
   shork.disconnect(connection)
 }
@@ -180,17 +178,17 @@ pub fn selecting_rows_test() {
     })
     |> shork.execute(connection)
 
-  should.equal(returned.column_names, ["id", "name", "size"])
-  list.length(returned.rows) |> should.equal(5)
+  assert returned.column_names == ["id", "name", "size"]
+  assert list.length(returned.rows) == 5
 
-  returned.rows
-  |> should.equal([
-    #(1, "Hainelore", 90.0),
-    #(2, "Tony Shark", 70.5),
-    #(3, "Kleinelore", 45.3),
-    #(4, "Kleinrich", 20.0),
-    #(5, "Clark the shark", 75.9),
-  ])
+  assert returned.rows
+    == [
+      #(1, "Hainelore", 90.0),
+      #(2, "Tony Shark", 70.5),
+      #(3, "Kleinelore", 45.3),
+      #(4, "Kleinrich", 20.0),
+      #(5, "Clark the shark", 75.9),
+    ]
 }
 
 pub fn select_single_row_test() {
@@ -210,11 +208,10 @@ pub fn select_single_row_test() {
     })
     |> shork.execute(connection)
 
-  should.equal(returned.column_names, ["id", "name", "size"])
-  list.length(returned.rows) |> should.equal(1)
+  assert returned.column_names == ["id", "name", "size"]
+  assert list.length(returned.rows) == 1
 
-  returned.rows
-  |> should.equal([#(1, "Hainelore", 90.0)])
+  returned.rows == [#(1, "Hainelore", 90.0)]
 }
 
 pub fn invalid_sql_test() {
@@ -225,12 +222,10 @@ pub fn invalid_sql_test() {
   let assert Error(shork.ServerError(code, message)) =
     shork.query(sql) |> shork.execute(connection)
 
-  should.equal(code, 1064)
+  assert code == 1064
 
   message
-  |> should.equal(
-    "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'update select *!!' at line 1",
-  )
+  == "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'update select *!!' at line 1"
 }
 
 pub fn insert_constraint_error_test() {
@@ -245,9 +240,9 @@ pub fn insert_constraint_error_test() {
     |> shork.parameter(shork.float(90.0))
     |> shork.execute(connection)
 
-  should.equal(code, 1062)
+  assert code == 1062
 
-  message |> should.equal("Duplicate entry '1' for key 'shorks.PRIMARY'")
+  assert message == "Duplicate entry '1' for key 'shorks.PRIMARY'"
 }
 
 pub fn select_from_unknown_table_test() {
@@ -259,9 +254,9 @@ pub fn select_from_unknown_table_test() {
     shork.query(sql)
     |> shork.execute(connection)
 
-  should.equal(code, 1146)
+  assert code == 1146
 
-  message |> should.equal("Table 'shork_test.unknown' doesn't exist")
+  assert message == "Table 'shork_test.unknown' doesn't exist"
 }
 
 pub fn insert_with_incorrect_types_test() {
@@ -274,12 +269,10 @@ pub fn insert_with_incorrect_types_test() {
   let assert Error(shork.ServerError(code, message)) =
     shork.query(sql) |> shork.execute(connection)
 
-  should.equal(code, 1064)
+  assert code == 1064
 
-  message
-  |> should.equal(
-    "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'into (true, true)' at line 1",
-  )
+  assert message
+    == "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'into (true, true)' at line 1"
 }
 
 pub fn transaction_commit_test() {
@@ -334,8 +327,8 @@ pub fn transaction_commit_test() {
       Ok(#(id1, id2))
     })
 
-  should.equal(id1, 6)
-  should.equal(id2, 7)
+  assert id1 == 6
+  assert id2 == 7
 
   let assert Error(shork.TransactionRolledBack(message)) =
     shork.transaction(connection, fn(connection) {
@@ -345,7 +338,7 @@ pub fn transaction_commit_test() {
       Error("Social Anxiety")
     })
 
-  should.equal(message, "Social Anxiety")
+  assert message == "Social Anxiety"
 
   let sql =
     "
@@ -368,10 +361,11 @@ pub fn transaction_commit_test() {
     })
     |> shork.execute(connection)
 
-  returned.column_names
-  |> should.equal(["id", "s1_name", "s2_name"])
+  assert returned.column_names == ["id", "s1_name", "s2_name"]
 
-  list.each(returned.rows, fn(row) { should.equal(row.0, 1) })
+  list.each(returned.rows, fn(row) {
+    assert row.0 == 1
+  })
 }
 
 pub fn query_with_custom_timeout_test() {
@@ -391,19 +385,19 @@ pub fn query_with_custom_timeout_test() {
     })
     |> shork.execute(connection)
 
-  should.equal(returned.column_names, ["id", "name", "size"])
-  list.length(returned.rows) |> should.equal(7)
+  assert returned.column_names == ["id", "name", "size"]
+  assert list.length(returned.rows) == 7
 
-  returned.rows
-  |> should.equal([
-    #(1, "Hainelore", 90.0),
-    #(2, "Tony Shark", 70.5),
-    #(3, "Kleinelore", 45.3),
-    #(4, "Kleinrich", 20.0),
-    #(5, "Clark the shark", 75.9),
-    #(6, "Trans Shork 1", 100.4),
-    #(7, "Trans Shork 2", 100.5),
-  ])
+  assert returned.rows
+    == [
+      #(1, "Hainelore", 90.0),
+      #(2, "Tony Shark", 70.5),
+      #(3, "Kleinelore", 45.3),
+      #(4, "Kleinrich", 20.0),
+      #(5, "Clark the shark", 75.9),
+      #(6, "Trans Shork 1", 100.4),
+      #(7, "Trans Shork 2", 100.5),
+    ]
 }
 
 pub fn query_with_too_short_custom_timeout_test() {
@@ -421,7 +415,7 @@ pub fn query_with_too_short_custom_timeout_test() {
     |> shork.execute(connection)
 
   let assert Ok(value) = list.first(result.rows)
-  should.equal(value, 1)
+  assert value == 1
 }
 
 pub fn null_test() {
