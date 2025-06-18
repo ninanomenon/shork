@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 <!-- ## [Unreleased] -->
 
+## [1.3.0] - 2025-06-17
+
+- bump version of:
+    - `gleam_erlang` to 1.0.0
+    - `gleam_stdlib` to 0.80.0
+    - `mysql` to 1.9.0
+- replaced `gleeunit/should` with `assert`
+
 ## [1.2.0] - 2025-02-05
 
 - Added `null` function.

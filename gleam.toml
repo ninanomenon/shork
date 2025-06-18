@@ -1,5 +1,5 @@
 name = "shork"
-version = "1.2.0"
+version = "1.3.0"
 
 description = "A MySQL / MariaDB database client for Gleam, based on MySQL-OTP. Heavily inspired by POG."
 licences = ["LGPL-3.0"]
