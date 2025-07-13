@@ -112,10 +112,16 @@ pub fn create(config: PoolConfig) -> Result(ConnectionPool, actor.StartError) {
         }),
     )
 
-  use pool_actor <- result.try(actor.start(initial_state, pool_actor_handler))
-  actor.send(pool_actor, Tick(pool_actor))
+  let pool_actor_result =
+    actor.new(initial_state)
+    |> actor.on_message(pool_actor_handler)
+    |> actor.start
 
-  Ok(ConnectionPool(pool_actor, config))
+  use pool_actor <- result.try(pool_actor_result)
+  let pool_actor_subject = pool_actor.data
+  actor.send(pool_actor_subject, Tick(pool_actor_subject))
+
+  Ok(ConnectionPool(pool_actor_subject, config))
 }
 
 /// The message type for new connections
@@ -139,25 +145,20 @@ type PoolActorMessage {
 /// Get a connection from the pool
 /// 
 /// If there is no connection available a new (temporary) connection will be returned.
-/// 
-/// An Ok result contains the (pooled) connection.
-/// An Error result means the pool actor did not respond within `connection_timeout`
-pub fn connect(pool: ConnectionPool) -> Result(shork.Connection, Nil) {
-  process.try_call(
-    pool.actor,
-    fn(connection_actor) { Connect(connection_actor) },
-    pool.config.connection_timeout,
-  )
-  |> result.map(fn(response: ConnectionActorMessage) {
-    let pool_connection = response.connection
-    // This assert is justified because `find_unused_and_mark_as_used()` will only return 
-    // connections that are active.
-    let assert Some(shork_connection) = pool_connection.connection
-    shork.make_pooled(shork_connection, fn(_) {
-      pool_disconnect(pool, pool_connection)
-    })
+pub fn connect(pool: ConnectionPool) -> shork.Connection {
+  let response =
+    process.call(
+      pool.actor,
+      pool.config.connection_timeout,
+      fn(connection_actor) { Connect(connection_actor) },
+    )
+  let pool_connection = response.connection
+  // This assert is justified because `find_unused_and_mark_as_used()` will only return 
+  // connections that are active.
+  let assert Some(shork_connection) = pool_connection.connection
+  shork.make_pooled(shork_connection, fn(_) {
+    pool_disconnect(pool, pool_connection)
   })
-  |> result.map_error(fn(_) { Nil })
 }
 
 /// Internal disconnect function
@@ -168,9 +169,9 @@ fn pool_disconnect(pool: ConnectionPool, connection: PoolConnection) {
 /// Handler function for the pool actor
 /// 
 fn pool_actor_handler(
-  msg: PoolActorMessage,
   state: PoolState,
-) -> Next(PoolActorMessage, PoolState) {
+  msg: PoolActorMessage,
+) -> Next(PoolState, PoolActorMessage) {
   case msg {
     Tick(actor) -> pool_actor_tick(state, actor)
     Connect(connection_actor) -> pool_actor_connect(state, connection_actor)
@@ -187,7 +188,7 @@ fn pool_actor_handler(
 fn pool_actor_connect(
   state: PoolState,
   connection_actor: Subject(ConnectionActorMessage),
-) -> Next(PoolActorMessage, PoolState) {
+) -> Next(PoolState, PoolActorMessage) {
   let #(reuseable_connection, new_state) = find_unused_and_mark_as_used(state)
 
   case reuseable_connection {
@@ -214,7 +215,7 @@ fn pool_actor_connect(
 fn pool_actor_disconnect(
   state: PoolState,
   connection: PoolConnection,
-) -> Next(PoolActorMessage, PoolState) {
+) -> Next(PoolState, PoolActorMessage) {
   case connection.is_outside_of_pool {
     True -> {
       let assert Some(shork_connection) = connection.connection
@@ -265,7 +266,7 @@ fn find_unused_and_mark_as_used(
 fn pool_actor_tick(
   state: PoolState,
   pool_actor: Subject(PoolActorMessage),
-) -> Next(PoolActorMessage, PoolState) {
+) -> Next(PoolState, PoolActorMessage) {
   process.send_after(pool_actor, state.config.tick_interval, Tick(pool_actor))
 
   state
