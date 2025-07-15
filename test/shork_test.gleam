@@ -1,7 +1,9 @@
 import gleam/dynamic/decode
 import gleam/list
+import gleam/otp/actor
 import gleeunit
 import shork
+import shork/pool
 
 pub fn main() {
   let connection = start_default()
@@ -10,6 +12,9 @@ pub fn main() {
   insert_default_data(connection)
 
   gleeunit.main()
+
+  truncate(connection)
+  shork.disconnect(connection)
 }
 
 fn start_default() -> shork.Connection {
@@ -18,6 +23,15 @@ fn start_default() -> shork.Connection {
   |> shork.password("root")
   |> shork.database("shork_test")
   |> shork.connect
+}
+
+fn start_pooled() -> Result(pool.ConnectionPool, actor.StartError) {
+  shork.default_config()
+  |> shork.user("root")
+  |> shork.password("root")
+  |> shork.database("shork_test")
+  |> pool.default_config()
+  |> pool.connect
 }
 
 fn create_table(connection: shork.Connection) {
@@ -53,10 +67,21 @@ fn create_table(connection: shork.Connection) {
     )
     "
 
+  let null_table_sql =
+    "
+    create table if not exists table_for_nulls (
+      id      int          not null auto_increment,
+      name    varchar(255),
+
+      primary key (id)
+    )
+    "
+
   [
     shork.query(shork_sql),
     shork.query(friend_groups_sql),
     shork.query(friend_group_member_sql),
+    shork.query(null_table_sql),
   ]
   |> list.each(fn(query) {
     let assert Ok(_) =
@@ -128,11 +153,17 @@ fn truncate(connection: shork.Connection) {
     shork.query("truncate friend_group_member"),
     shork.query("truncate friend_groups"),
     shork.query("truncate shorks"),
+    shork.query("truncate table_for_nulls"),
     shork.query("SET FOREIGN_KEY_CHECKS = 1;"),
   ]
   |> list.each(fn(query) {
     let assert Ok(_) = shork.execute(query, connection)
   })
+}
+
+fn rest_database(connection: shork.Connection) {
+  truncate(connection)
+  insert_default_data(connection)
 }
 
 pub fn insert_new_shork_test() {
@@ -159,6 +190,7 @@ pub fn insert_new_shork_test() {
     == ["last_insert_id", "affected_rows", "warning_count"]
   assert returned.rows == [#(5, 1, 0)]
 
+  rest_database(connection)
   shork.disconnect(connection)
 }
 
@@ -179,7 +211,7 @@ pub fn selecting_rows_test() {
     |> shork.execute(connection)
 
   assert returned.column_names == ["id", "name", "size"]
-  assert list.length(returned.rows) == 5
+  assert list.length(returned.rows) == 4
 
   assert returned.rows
     == [
@@ -187,8 +219,9 @@ pub fn selecting_rows_test() {
       #(2, "Tony Shark", 70.5),
       #(3, "Kleinelore", 45.3),
       #(4, "Kleinrich", 20.0),
-      #(5, "Clark the shark", 75.9),
     ]
+
+  shork.disconnect(connection)
 }
 
 pub fn select_single_row_test() {
@@ -211,7 +244,9 @@ pub fn select_single_row_test() {
   assert returned.column_names == ["id", "name", "size"]
   assert list.length(returned.rows) == 1
 
-  returned.rows == [#(1, "Hainelore", 90.0)]
+  assert returned.rows == [#(1, "Hainelore", 90.0)]
+
+  shork.disconnect(connection)
 }
 
 pub fn invalid_sql_test() {
@@ -224,8 +259,10 @@ pub fn invalid_sql_test() {
 
   assert code == 1064
 
-  message
-  == "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'update select *!!' at line 1"
+  assert message
+    == "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'update select *!!' at line 1"
+
+  shork.disconnect(connection)
 }
 
 pub fn insert_constraint_error_test() {
@@ -243,6 +280,9 @@ pub fn insert_constraint_error_test() {
   assert code == 1062
 
   assert message == "Duplicate entry '1' for key 'shorks.PRIMARY'"
+
+  rest_database(connection)
+  shork.disconnect(connection)
 }
 
 pub fn select_from_unknown_table_test() {
@@ -257,6 +297,8 @@ pub fn select_from_unknown_table_test() {
   assert code == 1146
 
   assert message == "Table 'shork_test.unknown' doesn't exist"
+
+  shork.disconnect(connection)
 }
 
 pub fn insert_with_incorrect_types_test() {
@@ -273,6 +315,9 @@ pub fn insert_with_incorrect_types_test() {
 
   assert message
     == "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'into (true, true)' at line 1"
+
+  rest_database(connection)
+  shork.disconnect(connection)
 }
 
 pub fn transaction_commit_test() {
@@ -327,8 +372,8 @@ pub fn transaction_commit_test() {
       Ok(#(id1, id2))
     })
 
-  assert id1 == 6
-  assert id2 == 7
+  assert id1 == 5
+  assert id2 == 6
 
   let assert Error(shork.TransactionRolledBack(message)) =
     shork.transaction(connection, fn(connection) {
@@ -366,6 +411,9 @@ pub fn transaction_commit_test() {
   list.each(returned.rows, fn(row) {
     assert row.0 == 1
   })
+
+  rest_database(connection)
+  shork.disconnect(connection)
 }
 
 pub fn query_with_custom_timeout_test() {
@@ -386,7 +434,7 @@ pub fn query_with_custom_timeout_test() {
     |> shork.execute(connection)
 
   assert returned.column_names == ["id", "name", "size"]
-  assert list.length(returned.rows) == 7
+  assert list.length(returned.rows) == 4
 
   assert returned.rows
     == [
@@ -394,10 +442,10 @@ pub fn query_with_custom_timeout_test() {
       #(2, "Tony Shark", 70.5),
       #(3, "Kleinelore", 45.3),
       #(4, "Kleinrich", 20.0),
-      #(5, "Clark the shark", 75.9),
-      #(6, "Trans Shork 1", 100.4),
-      #(7, "Trans Shork 2", 100.5),
     ]
+
+
+  shork.disconnect(connection)
 }
 
 pub fn query_with_too_short_custom_timeout_test() {
@@ -416,22 +464,12 @@ pub fn query_with_too_short_custom_timeout_test() {
 
   let assert Ok(value) = list.first(result.rows)
   assert value == 1
+
+  shork.disconnect(connection)
 }
 
 pub fn null_test() {
   let connection = start_default()
-  let create_table_sql =
-    "
-    create table if not exists table_for_nulls (
-      id      int          not null auto_increment,
-      name    varchar(255),
-
-      primary key (id)
-    )
-    "
-
-  let assert Ok(_) =
-    create_table_sql |> shork.query |> shork.execute(connection)
 
   let sql = shork.query("insert into table_for_nulls (id, name) values (?, ?)")
 
@@ -440,4 +478,34 @@ pub fn null_test() {
     |> shork.parameter(shork.int(1))
     |> shork.parameter(shork.null())
     |> shork.execute(connection)
+
+  shork.disconnect(connection)
+}
+
+pub fn pooled_connection_query_test() {
+  let assert Ok(connection) = start_pooled()
+
+  let sql = "select * from shorks"
+
+  let assert Ok(returned) =
+    shork.query(sql)
+    |> shork.returning({
+      use id <- decode.field(0, decode.int)
+      use name <- decode.field(1, decode.string)
+      use size <- decode.field(2, decode.float)
+
+      decode.success(#(id, name, size))
+    })
+    |> shork.execute(pool.get_connection(connection))
+
+  assert returned.column_names == ["id", "name", "size"]
+  assert list.length(returned.rows) == 4
+
+  assert returned.rows
+    == [
+      #(1, "Hainelore", 90.0),
+      #(2, "Tony Shark", 70.5),
+      #(3, "Kleinelore", 45.3),
+      #(4, "Kleinrich", 20.0),
+    ]
 }

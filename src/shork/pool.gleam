@@ -80,7 +80,7 @@ pub fn default_config(connection_config: shork.Config) -> PoolConfig {
 }
 
 /// Builder-pattern-style setter for the pool size
-pub fn pool_size(config: PoolConfig, pool_size: Int) -> PoolConfig {
+pub fn size(config: PoolConfig, pool_size: Int) -> PoolConfig {
   PoolConfig(..config, pool_size: pool_size)
 }
 
@@ -97,7 +97,7 @@ pub fn max_age(config: PoolConfig, max_age: Int) -> PoolConfig {
 /// frame are temporary and will not be reused.
 /// 
 /// An Error result means the pool could not be started.
-pub fn create(config: PoolConfig) -> Result(ConnectionPool, actor.StartError) {
+pub fn connect(config: PoolConfig) -> Result(ConnectionPool, actor.StartError) {
   let initial_state =
     PoolState(
       config: config,
@@ -145,7 +145,7 @@ type PoolActorMessage {
 /// Get a connection from the pool
 /// 
 /// If there is no connection available a new (temporary) connection will be returned.
-pub fn connect(pool: ConnectionPool) -> shork.Connection {
+pub fn get_connection(pool: ConnectionPool) -> shork.Connection {
   let response =
     process.call(
       pool.actor,
