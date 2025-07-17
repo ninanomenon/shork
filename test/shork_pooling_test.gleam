@@ -1,7 +1,7 @@
-import gleam/list
 import gleam/dynamic/decode
-import shork
+import gleam/list
 import gleam/otp/actor
+import shork
 import shork/pool
 
 fn start_pooled() -> Result(pool.ConnectionPool, actor.StartError) {
