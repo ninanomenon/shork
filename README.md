@@ -49,6 +49,20 @@ gleam run   # Run the project
 gleam test  # Run the tests
 ```
 
+To run tests, a mysql instance must be running with the following parameters:
+
+* host: localhost
+* port: 3306
+* user: root
+* password: root
+* database: short_test
+
+You can start it using docker like this:
+
+```bash
+docker run -d --rm -p 3306:3306 -e MYSQL_ROOT_PASSWORD="root" -e MYSQL_DATABASE=shork_test mysql
+```
+
 ## Acknowlement
 
 This project is kindly supported by [binary butterfly](https://github.com/binary-butterfly).
