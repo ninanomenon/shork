@@ -1,9 +1,11 @@
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/erlang/charlist.{type Charlist, from_string}
+import gleam/int
 import gleam/list
 import gleam/option
 import gleam/result
+import gleam/time/calendar
 
 // TODO: SSL
 // TODO: Connection pooling
@@ -170,6 +172,9 @@ pub fn disconnect(connection: Connection) -> Nil {
 /// parameterised SQL query.
 pub type Value
 
+@external(erlang, "shork_ffi", "coerce")
+fn coerce_value(p: any) -> Value
+
 @external(erlang, "shork_ffi", "null")
 pub fn null() -> Value
 
@@ -184,6 +189,20 @@ pub fn float(a: Float) -> Value
 
 @external(erlang, "shork_ffi", "coerce")
 pub fn text(a: String) -> Value
+
+pub fn calendar_date(a: calendar.Date) -> Value {
+  coerce_value(#(a.year, calendar.month_to_int(a.month), a.day))
+}
+
+pub fn calendar_time_of_day(time: calendar.TimeOfDay) -> Value {
+  let seconds = int.to_float(time.seconds)
+  let seconds = seconds +. int.to_float(time.nanoseconds) /. 1_000_000_000.0
+
+  // The time format in mysql-otp requires a "days" element
+  // which we set to 0.
+  // See: https://github.com/mysql-otp/mysql-otp/blob/1afd59677b3e2daf795f5fd77268e1dbc20f4c51/src/mysql_encode.erl#L40
+  coerce_value(#(0, #(time.hours, time.minutes, seconds)))
+}
 
 pub opaque type Query(row_type) {
   Query(

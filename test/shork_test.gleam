@@ -1,5 +1,6 @@
 import gleam/dynamic/decode
 import gleam/list
+import gleam/time/calendar
 import gleeunit
 import shork
 
@@ -53,10 +54,21 @@ fn create_table(connection: shork.Connection) {
     )
     "
 
+  let dates_sql =
+    "
+    create table if not exists dates (
+      date date not null,
+      time time not null,
+
+      primary key (date, time)
+    )
+    "
+
   [
     shork.query(shork_sql),
     shork.query(friend_groups_sql),
     shork.query(friend_group_member_sql),
+    shork.query(dates_sql),
   ]
   |> list.each(fn(query) {
     let assert Ok(_) =
@@ -158,6 +170,39 @@ pub fn insert_new_shork_test() {
   assert returned.column_names
     == ["last_insert_id", "affected_rows", "warning_count"]
   assert returned.rows == [#(5, 1, 0)]
+
+  shork.disconnect(connection)
+}
+
+pub fn insert_new_dates_test() {
+  let connection = start_default()
+
+  let sql =
+    "
+    insert into dates (date, time)
+    values (?, ?)
+    "
+
+  let assert Ok(returned) =
+    shork.query(sql)
+    |> shork.parameter(
+      shork.calendar_date(calendar.Date(2000, calendar.January, 1)),
+    )
+    |> shork.parameter(
+      shork.calendar_time_of_day(calendar.TimeOfDay(15, 14, 13, 12)),
+    )
+    |> shork.returning({
+      use id <- decode.field(0, decode.int)
+      use affected_rows <- decode.field(1, decode.int)
+      use warning_count <- decode.field(2, decode.int)
+
+      decode.success(#(id, affected_rows, warning_count))
+    })
+    |> shork.execute(connection)
+
+  assert returned.column_names
+    == ["last_insert_id", "affected_rows", "warning_count"]
+  assert returned.rows == [#(0, 1, 0)]
 
   shork.disconnect(connection)
 }
