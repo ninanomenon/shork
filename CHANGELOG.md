@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- ## [Unreleased] -->
+## [1.3.1] - 2025-10-03
+
+- Add `calendar_date` and `calendar_time_of_day` to allow setting date and time parameters
 
 ## [1.3.0] - 2025-06-17
 
