@@ -420,6 +420,9 @@ pub fn query_with_too_short_custom_timeout_test() {
 
 pub fn null_test() {
   let connection = start_default()
+
+  let _ = shork.query("truncate table_for_nulls") |> shork.execute(connection)
+
   let create_table_sql =
     "
     create table if not exists table_for_nulls (
@@ -440,4 +443,6 @@ pub fn null_test() {
     |> shork.parameter(shork.int(1))
     |> shork.parameter(shork.null())
     |> shork.execute(connection)
+
+  shork.query("truncate table_for_nulls") |> shork.execute(connection)
 }

@@ -284,7 +284,7 @@ pub fn execute(
     parameters,
     query.timeout,
   ))
-  use rows <- result.then(
+  use rows <- result.try(
     rows
     |> list.try_map(decode.run(_, query.row_decoder))
     |> result.map_error(UnexpectedResultType),
