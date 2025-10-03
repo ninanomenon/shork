@@ -149,13 +149,6 @@ type RawConnection
 @external(erlang, "shork_ffi", "connect")
 fn raw_connect(a: Config) -> RawConnection
 
-pub fn make_pooled(
-  connection: Connection,
-  disconnect: fn(Connection) -> Nil,
-) -> Connection {
-  Connection(..connection, disconnect: disconnect)
-}
-
 /// Starts a database connection.
 pub fn connect(config: Config) -> Connection {
   Connection(raw_connect(config), simple_disconnect)
