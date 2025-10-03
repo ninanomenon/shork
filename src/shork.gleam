@@ -149,13 +149,6 @@ type RawConnection
 @external(erlang, "shork_ffi", "connect")
 fn raw_connect(a: Config) -> RawConnection
 
-pub fn make_pooled(
-  connection: Connection,
-  disconnect: fn(Connection) -> Nil,
-) -> Connection {
-  Connection(..connection, disconnect: disconnect)
-}
-
 /// Starts a database connection.
 pub fn connect(config: Config) -> Connection {
   Connection(raw_connect(config), simple_disconnect)
@@ -291,7 +284,7 @@ pub fn execute(
     parameters,
     query.timeout,
   ))
-  use rows <- result.then(
+  use rows <- result.try(
     rows
     |> list.try_map(decode.run(_, query.row_decoder))
     |> result.map_error(UnexpectedResultType),

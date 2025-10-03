@@ -440,4 +440,6 @@ pub fn null_test() {
     |> shork.parameter(shork.int(1))
     |> shork.parameter(shork.null())
     |> shork.execute(connection)
+
+  shork.query("truncate tables_for_nulls") |> shork.execute(connection)
 }
