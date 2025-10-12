@@ -1,11 +1,18 @@
 # shork
 
+> [!CAUTION]
+> We have moved!
+> This repository is now located at codeberg: https://codeberg.org/ninanonemon/shork
+> All development will takes place there.
+
+---
+
 A MySQL / MariaDB database client for Gleam, based on [MySQL-OTP](https://github.com/mysql-otp/mysql-otp). Heavily inspired by [POG](https://github.com/lpil/pog)
 
 ```gleam
 import shork
 
-pub fn main() {  
+pub fn main() {
   // Start database connection
   let connection =
     shork.default_config()
@@ -27,7 +34,7 @@ pub fn main() {
 
   // Runs the query
   // The int 1 is given as parameter
-  let assert Ok(response) = 
+  let assert Ok(response) =
     shork.query(query)
     |> shork.parameter(shork.int(1))
     |> shork.returning(row_decoder)
@@ -51,11 +58,11 @@ gleam test  # Run the tests
 
 To run tests, a mysql instance must be running with the following parameters:
 
-* host: localhost
-* port: 3306
-* user: root
-* password: root
-* database: short_test
+- host: localhost
+- port: 3306
+- user: root
+- password: root
+- database: short_test
 
 You can start it using docker like this:
 
