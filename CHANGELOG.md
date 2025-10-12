@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 <!-- ## [Unreleased] -->
 
-## [1.4.0] - 2025-10-03
+## [1.4.0] - 2025-10-12
 
 - Add `calendar_date` and `calendar_time_of_day` to allow setting date and time parameters
 - bump version of:
